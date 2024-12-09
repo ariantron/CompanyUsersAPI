@@ -17,4 +17,3 @@ jobs:
         run: |
           cd ~/sites/sapi.mtrade.ir
           git pull origin main
-          composer i

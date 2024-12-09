@@ -1,4 +1,4 @@
-name: Deployment during push on the main branch
+name: Deploy Application
 
 on:
   push:
@@ -7,16 +7,13 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Executing remote ssh commands using password
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            cd ~/sites/sapi.mtrade.ir
-            git pull origin main
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run deployment commands
+        run: |
+          cd ~/sites/sapi.mtrade.ir
+          git pull origin main

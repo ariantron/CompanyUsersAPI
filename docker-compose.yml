@@ -1,0 +1,39 @@
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    ports:
+      - "${APP_PORT}:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "${DATABASE_URL}"
+    networks:
+      - symfony
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:17.2
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - symfony
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  symfony:
+    driver: bridge

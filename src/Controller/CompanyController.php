@@ -4,20 +4,31 @@ namespace App\Controller;
 
 use App\Entity\Company;
 use App\Repository\CompanyRepository;
+use App\Repository\UserRepository;
 use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class CompanyController extends AbstractController
+class CompanyController extends BaseController
 {
+    private ParameterBagInterface $params;
     private CompanyRepository $companyRepository;
+    private UserRepository $userRepository;
 
-    public function __construct(CompanyRepository $companyRepository)
+    public function __construct(
+        ParameterBagInterface $params,
+        CompanyRepository $companyRepository,
+        UserRepository $userRepository
+    )
     {
+        $this->params = $params;
         $this->companyRepository = $companyRepository;
+        $this->userRepository = $userRepository;
+        parent::__construct($params, $userRepository);
     }
 
     #[Route('/companies', methods: ['GET'])]

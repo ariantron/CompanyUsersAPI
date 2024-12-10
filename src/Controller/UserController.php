@@ -5,21 +5,29 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\CompanyRepository;
 use App\Repository\UserRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class UserController extends AbstractController
+class UserController extends BaseController
 {
-    private UserRepository $userRepository;
+    private ParameterBagInterface $params;
     private CompanyRepository $companyRepository;
+    private UserRepository $userRepository;
 
-    public function __construct(UserRepository $userRepository, CompanyRepository $companyRepository)
+    public function __construct(
+        ParameterBagInterface $params,
+        CompanyRepository     $companyRepository,
+        UserRepository        $userRepository
+    )
     {
-        $this->userRepository = $userRepository;
+        $this->params = $params;
         $this->companyRepository = $companyRepository;
+        $this->userRepository = $userRepository;
+        parent::__construct($params, $userRepository);
     }
 
     #[Route('/users', methods: ['GET'])]
@@ -47,6 +55,16 @@ class UserController extends AbstractController
         }
 
         return $this->json($user);
+    }
+
+    #[Route('/user', methods: ['GET'])]
+    public function user(Request $request): Response
+    {
+        $user = $this->getUserFromJWT($request);
+        if ($user) {
+            return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read']]);
+        }
+        return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
     }
 
     #[Route('/users', methods: ['POST'])]

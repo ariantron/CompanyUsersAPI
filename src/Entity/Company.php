@@ -29,7 +29,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
             controller: 'App\Controller\CompanyController::show',
             description: 'Retrieve a single company by ID.'
         ),
-        new Get(
+        new GetCollection(
             uriTemplate: '/companies/{id}/users',
             controller: 'App\Controller\CompanyController::getUsers',
             description: 'Retrieve users of company.'

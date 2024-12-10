@@ -17,5 +17,4 @@ return [
     Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class => ['all' => true],
     Zenstruck\Foundry\ZenstruckFoundryBundle::class => ['all' => true],
     Jose\Bundle\JoseFramework\JoseFrameworkBundle::class => ['all' => true],
-    Lexik\Bundle\JWTAuthenticationBundle\LexikJWTAuthenticationBundle::class => ['all' => true],
 ];

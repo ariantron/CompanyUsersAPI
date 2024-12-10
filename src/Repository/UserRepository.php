@@ -4,16 +4,23 @@ namespace App\Repository;
 
 use App\Entity\Company;
 use App\Entity\User;
+use App\Service\JwtService;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @extends ServiceEntityRepository<User>
  */
 class UserRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    private ParameterBagInterface $params;
+
+    public function __construct(ManagerRegistry $registry, ParameterBagInterface $params)
     {
+        $this->params = $params;
         parent::__construct($registry, User::class);
     }
 
@@ -121,5 +128,25 @@ class UserRepository extends ServiceEntityRepository
     {
         $this->getEntityManager()->remove($user);
         $this->getEntityManager()->flush();
+    }
+
+    /**
+     * Login a user.
+     *
+     * @param string $username
+     * @param string $password
+     * @return string|null
+     */
+    public function login(string $username, string $password): ?string
+    {
+        $user = $this->getEntityManager()->getRepository(User::class)->findOneBy(['username' => $username]);
+        if (!$user || !password_verify($password, $user->getPassword())) {
+            return null;
+        }
+        return (new JwtService($this->params))->generateJWT([
+            'id' => $user->getId(),
+            'username' => $user->getUsername(),
+            'role' => $user->getRole()
+        ]);
     }
 }

@@ -8,6 +8,8 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use App\Dto\LoginRequest;
+use App\Dto\LoginResponse;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -28,6 +30,11 @@ use App\Enum\UserRoleEnum;
             controller: 'App\Controller\UserController::show',
             description: 'Retrieve a single user by ID.'
         ),
+        new Get(
+            uriTemplate: '/user',
+            controller: 'App\Controller\UserController::user',
+            description: 'Retrieve get request user.'
+        ),
         new Post(
             uriTemplate: '/users',
             controller: 'App\Controller\UserController::store',
@@ -38,12 +45,12 @@ use App\Enum\UserRoleEnum;
             controller: 'App\Controller\UserController::update',
             description: 'Update a user by ID.'
         ),
-        new PUT(
+        new put(
             uriTemplate: '/users/{id}/set-company/{companyId}',
             controller: 'App\Controller\UserController::assignCompany',
             description: 'Set a user to a company.'
         ),
-        new PUT(
+        new put(
             uriTemplate: '/users/{id}/unset-company/{companyId}',
             controller: 'App\Controller\UserController::unassignCompany',
             description: 'Unset a user from a company.'
@@ -52,6 +59,13 @@ use App\Enum\UserRoleEnum;
             uriTemplate: '/users/{id}',
             controller: 'App\Controller\UserController::delete',
             description: 'Delete a user by ID.'
+        ),
+        new Post(
+            uriTemplate: 'login',
+            controller: 'App\Controller\AuthController::login',
+            description: 'Login a user.',
+            input: LoginRequest::class,
+            output: LoginResponse::class
         )
     ]
 )]

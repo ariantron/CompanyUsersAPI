@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Enum\UserRoleEnum;
 use App\Repository\CompanyRepository;
 use App\Repository\UserRepository;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
@@ -33,47 +34,73 @@ class UserController extends BaseController
     #[Route('/users', methods: ['GET'])]
     public function index(Request $request): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$this->checkAccess($requestUser,
+            [UserRoleEnum::ROLE_COMPANY_ADMIN, UserRoleEnum::ROLE_SUPER_ADMIN])) {
+            return $this->responseForbidden();
+        }
+        $data = json_decode($request->getContent(), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
+        if ($requestUser->isSuperAdmin()) {
+            $companyId = $data['company_id'] ?? null;
+        } else {
+            $companyId = $requestUser->getCompany()->getId();
+        }
         $filters = [
-            'companyId' => $request->query->get('company_id'),
-            'role' => $request->query->get('role'),
-            'pageNumber' => $request->query->get('page_number', 1),
-            'pageSize' => $request->query->get('page_size', 12),
+            'companyId' => $companyId,
+            'role' => $data['role'] ?? null,
+            'pageNumber' => $data['pageNumber'] ?? 1,
+            'pageSize' => $data['pageSize'] ?? 12,
         ];
-
         $users = $this->userRepository->index($filters);
-
         return $this->json($users);
     }
 
     #[Route('/users/{id}', methods: ['GET'])]
-    public function show(int $id): Response
+    public function show(int $id, Request $request): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
         $user = $this->userRepository->findById($id);
-
+        if (
+            ($requestUser->isJustUser() and $requestUser->getId() != $id) or
+            ($requestUser->isCompanyAdmin() and $requestUser->getCompany() != $user->getCompany()->getId())
+        ) {
+            return $this->responseForbidden();
+        }
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-
         return $this->json($user);
     }
 
     #[Route('/user', methods: ['GET'])]
     public function user(Request $request): Response
     {
-        $user = $this->getUserFromJWT($request);
-        if ($user) {
-            return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read']]);
+        $response = $this->getUserFromJWT($request);
+        if (is_array($response)) {
+            return $this->json(['error' => $response['message']], $response['status']);
         }
-        return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        $user = $response;
+        return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read']]);
     }
 
     #[Route('/users', methods: ['POST'])]
     public function store(Request $request, ValidatorInterface $validator): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$this->checkAccess($requestUser,
+            [UserRoleEnum::ROLE_COMPANY_ADMIN, UserRoleEnum::ROLE_SUPER_ADMIN])) {
+            return $this->responseForbidden();
+        }
+        $data = json_decode($request->getContent(), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
         $user = new User();
-        $user->setName($request->get('name'));
-        $user->setRole($request->get('role'));
-
+        $user->setName($data['name']);
+        $user->setRole($data['role']);
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
@@ -82,28 +109,32 @@ class UserController extends BaseController
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
-
         $this->userRepository->store($user);
-
         return $this->json(['message' => 'User created successfully'], Response::HTTP_CREATED);
     }
 
     #[Route('/users', methods: ['PUT'])]
     public function update(int $id, Request $request, ValidatorInterface $validator): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$this->checkAccess($requestUser,
+            [UserRoleEnum::ROLE_COMPANY_ADMIN, UserRoleEnum::ROLE_SUPER_ADMIN])) {
+            return $this->responseForbidden();
+        }
+        $data = json_decode($request->getContent(), true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
         $user = $this->userRepository->findById($id);
-
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-
-        if ($request->get('name')) {
-            $user->setName($request->get('name'));
+        if ($requestUser->isCompanyAdmin() and
+            $requestUser->getCompany()->getId() != $user->getCompany()->getId()) {
+            return $this->responseForbidden();
         }
-        if ($request->get('role')) {
-            $user->setRole($request->get('role'));
-        }
-
+        $user->setName($data['name']);
+        $user->setRole($data['role']);
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
@@ -112,54 +143,55 @@ class UserController extends BaseController
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
-
         $this->userRepository->update($user);
-
         return $this->json(['message' => 'User updated successfully']);
     }
 
     #[Route('/users/{id}/set-company/{companyId}', methods: ['PUT'])]
-    public function setCompany(int $id, int $companyId): Response
+    public function setCompany(int $id, int $companyId, Request $request): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$requestUser->isSuperAdmin()) {
+            return $this->responseForbidden();
+        }
         $user = $this->userRepository->findById($id);
         $company = $this->companyRepository->findById($companyId);
-
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         } elseif (!$company) {
             return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
         }
-
         $this->userRepository->setCompany($user, $company);
-
         return $this->json(['message' => 'User was set to company successfully']);
     }
 
     #[Route('/users/{id}/unset-company/{companyId}', methods: ['PUT'])]
-    public function unsetCompany(int $id): Response
+    public function unsetCompany(int $id, Request $request): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$requestUser->isSuperAdmin()) {
+            return $this->responseForbidden();
+        }
         $user = $this->userRepository->findById($id);
-
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-
         $this->userRepository->unsetCompany($user);
-
         return $this->json(['message' => 'User was unset to company successfully']);
     }
 
     #[Route('/users/{id}', methods: ['DELETE'])]
-    public function delete(int $id): Response
+    public function delete(int $id, Request $request): Response
     {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$requestUser->isSuperAdmin()) {
+            return $this->responseForbidden();
+        }
         $user = $this->userRepository->findById($id);
-
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-
         $this->userRepository->delete($user);
-
         return $this->json(['message' => 'User deleted successfully']);
     }
 }

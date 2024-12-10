@@ -28,15 +28,11 @@ class CompanyRepository extends ServiceEntityRepository
      */
     public function index(array $filters): array
     {
-        $pageNumber = $filters['pageNumber'] ?? 1;
-        $pageSize = $filters['pageSize'] ?? 12;
-
         $queryBuilder = $this->createQueryBuilder('c')
             ->orderBy('c.id', 'DESC');
-
-        $queryBuilder->setFirstResult(($pageNumber - 1) * $pageSize)
+        $pageSize = 12;
+        $queryBuilder->setFirstResult(($filters['page'] - 1) * $pageSize)
             ->setMaxResults($pageSize);
-
         return $queryBuilder->getQuery()->getResult();
     }
 
@@ -77,7 +73,6 @@ class CompanyRepository extends ServiceEntityRepository
      * Update a company entity in the database.
      *
      * @param Company $company The company entity to update.
-     * @throws Exception
      */
     public function update(Company $company): void
     {

@@ -33,26 +33,18 @@ class UserRepository extends ServiceEntityRepository
     public function index(array $filters = []): array
     {
         $queryBuilder = $this->createQueryBuilder('u');
-
-        // Filter by company ID if provided
-        if (isset($filters['companyId'])) {
+        if ($filters['companyId']) {
             $queryBuilder->andWhere('u.company = :companyId')
                 ->setParameter('companyId', $filters['companyId']);
         }
-
-        // Filter by role if provided
-        if (isset($filters['role'])) {
+        if ($filters['role']) {
             $queryBuilder->andWhere('u.role = :role')
                 ->setParameter('role', $filters['role']);
         }
-
-        // Handle pagination if pageNumber and pageSize are provided
-        $pageNumber = $filters['pageNumber'] ?? 1;
-        $pageSize = $filters['pageSize'] ?? 12;
+        $pageSize = 12;
         $queryBuilder->orderBy('u.id', 'DESC')
-            ->setFirstResult(($pageNumber - 1) * $pageSize)
+            ->setFirstResult(($filters['page'] - 1) * $pageSize)
             ->setMaxResults($pageSize);
-
         return $queryBuilder->getQuery()->getResult();
     }
 

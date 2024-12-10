@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Dto\LoginRequest;
 use App\Dto\LoginResponse;
+use App\Dto\UserFilterInput;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -169,5 +170,20 @@ class User
     public function setPassword(string $password): void
     {
         $this->password = $password;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->getRole() == UserRoleEnum::ROLE_SUPER_ADMIN;
+    }
+
+    public function isCompanyAdmin(): bool
+    {
+        return $this->getRole() == UserRoleEnum::ROLE_COMPANY_ADMIN;
+    }
+
+    public function isJustUser(): bool
+    {
+        return $this->getRole() == UserRoleEnum::ROLE_USER;
     }
 }

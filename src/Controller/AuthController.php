@@ -25,17 +25,13 @@ class AuthController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $username = $data['username'] ?? null;
         $password = $data['password'] ?? null;
-
         if (!$username || !$password) {
             return $this->json(['error' => 'Username and password are required'], 400);
         }
-
         $token = $this->userRepository->login($username, $password);
-
         if($token) {
             return $this->json(['token' => $token]);
         }
-
         return $this->json(['error' => 'Invalid credentials'], 401);
     }
 }

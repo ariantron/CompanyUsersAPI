@@ -25,25 +25,17 @@ class UserRepository extends ServiceEntityRepository
     }
 
     /**
-     * Retrieve users based on filters.
+     * Retrieve users.
      *
-     * @param array $filters Contains filters such as 'companyId', 'role', 'pageNumber', and 'pageSize'.
+     * @param int $page
      * @return User[] Returns an array of User objects.
      */
-    public function index(array $filters = []): array
+    public function index(int $page = 1): array
     {
         $queryBuilder = $this->createQueryBuilder('u');
-        if ($filters['companyId']) {
-            $queryBuilder->andWhere('u.company = :companyId')
-                ->setParameter('companyId', $filters['companyId']);
-        }
-        if ($filters['role']) {
-            $queryBuilder->andWhere('u.role = :role')
-                ->setParameter('role', $filters['role']);
-        }
         $pageSize = 12;
-        $queryBuilder->orderBy('u.id', 'DESC')
-            ->setFirstResult(($filters['page'] - 1) * $pageSize)
+        $queryBuilder->orderBy('u.id', 'ASC')
+            ->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
         return $queryBuilder->getQuery()->getResult();
     }

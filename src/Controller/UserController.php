@@ -39,23 +39,8 @@ class UserController extends BaseController
             [UserRoleEnum::ROLE_COMPANY_ADMIN, UserRoleEnum::ROLE_SUPER_ADMIN])) {
             return $this->responseForbidden();
         }
-        $data = json_decode($request->getContent(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
-        }
-        if ($requestUser->isSuperAdmin()) {
-            $companyId = $data['company_id'] ?? null;
-        } else {
-            $companyId = $requestUser->getCompany()->getId();
-        }
-        $filters = [
-            'companyId' => $companyId,
-            'role' => $data['role'] ?? null,
-            'pageNumber' => $data['pageNumber'] ?? 1,
-            'pageSize' => $data['pageSize'] ?? 12,
-        ];
-        $users = $this->userRepository->index($filters);
-        return $this->json($users);
+        $users = $this->userRepository->index($request->get('page', 1));
+        return $this->json($users, context: [AbstractNormalizer::GROUPS => ['user:read']]);
     }
 
     #[Route('/users/{id}', methods: ['GET'])]
@@ -99,18 +84,54 @@ class UserController extends BaseController
             return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
         }
         $user = new User();
-        $user->setName($data['name']);
-        $user->setRole($data['role']);
+        if (isset($data['name'])) {
+            $user->setName($data['name'] ?? null);
+        }
+        if (UserRoleEnum::isValid($data['role'] ?? null)) {
+            $user->setRole(UserRoleEnum::from($data['role']));
+        }
+        if (isset($data['company'])) {
+            $company = $this->companyRepository->findById($data['company']);
+            if (!$company) {
+                return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
+            }
+            $user->setCompany($company);
+        }
+        if (isset($data['username'])) {
+            $user->setUsername($data['username']);
+        }
+        if (isset($data['password'])) {
+            $user->setPassword($data['password']);
+        }
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+                $field = $error->getPropertyPath();
+                $errorMessages[$field] = $error->getMessage();
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
         $this->userRepository->store($user);
         return $this->json(['message' => 'User created successfully'], Response::HTTP_CREATED);
+    }
+
+    #[Route('/users/{id}/set-company/{companyId}', methods: ['PUT'])]
+    public function setCompany(int $id, int $companyId, Request $request): Response
+    {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$requestUser->isSuperAdmin()) {
+            return $this->responseForbidden();
+        }
+        $user = $this->userRepository->findById($id);
+        $company = $this->companyRepository->findById($companyId);
+        if (!$user) {
+            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        } elseif (!$company) {
+            return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
+        }
+        $this->userRepository->setCompany($user, $company);
+        return $this->json(['message' => 'User was set to company successfully']);
     }
 
     #[Route('/users', methods: ['PUT'])]
@@ -133,36 +154,36 @@ class UserController extends BaseController
             $requestUser->getCompany()->getId() != $user->getCompany()->getId()) {
             return $this->responseForbidden();
         }
-        $user->setName($data['name']);
-        $user->setRole($data['role']);
+        if (isset($data['name'])) {
+            $user->setName($data['name'] ?? null);
+        }
+        if (UserRoleEnum::isValid($data['role'] ?? null)) {
+            $user->setRole(UserRoleEnum::from($data['role']));
+        }
+        if (isset($data['company'])) {
+            $company = $this->companyRepository->findById($data['company']);
+            if (!$company) {
+                return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
+            }
+            $user->setCompany($company);
+        }
+        if (isset($data['username'])) {
+            $user->setUsername($data['username']);
+        }
+        if (isset($data['password'])) {
+            $user->setPassword($data['password']);
+        }
         $errors = $validator->validate($user);
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+                $field = $error->getPropertyPath();
+                $errorMessages[$field] = $error->getMessage();
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
         $this->userRepository->update($user);
         return $this->json(['message' => 'User updated successfully']);
-    }
-
-    #[Route('/users/{id}/set-company/{companyId}', methods: ['PUT'])]
-    public function setCompany(int $id, int $companyId, Request $request): Response
-    {
-        $requestUser = $this->getUserFromJWT($request);
-        if (!$requestUser->isSuperAdmin()) {
-            return $this->responseForbidden();
-        }
-        $user = $this->userRepository->findById($id);
-        $company = $this->companyRepository->findById($companyId);
-        if (!$user) {
-            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
-        } elseif (!$company) {
-            return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
-        }
-        $this->userRepository->setCompany($user, $company);
-        return $this->json(['message' => 'User was set to company successfully']);
     }
 
     #[Route('/users/{id}/unset-company/{companyId}', methods: ['PUT'])]

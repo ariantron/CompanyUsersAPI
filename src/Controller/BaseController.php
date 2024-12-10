@@ -57,9 +57,10 @@ class BaseController extends AbstractController
         return $this->json(['error' => 'Access Denied!'], Response::HTTP_FORBIDDEN);
     }
 
-    protected function checkAccess(User $user, array $rules): bool
+    protected function checkAccess(User|array $user, array $rules): bool
     {
-        if (in_array($user->getRole(), $rules)) {
+        if ($user instanceof User and
+            in_array($user->getRole(), $rules)) {
             return true;
         }
         return false;

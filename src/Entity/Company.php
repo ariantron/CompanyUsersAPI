@@ -8,7 +8,6 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
-use App\Dto\CompanyFilterInput;
 use App\Repository\CompanyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -37,7 +36,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
         ),
         new Post(
             uriTemplate: '/companies',
-            controller: 'App\Controller\CompanyController::store',
+            controller: 'App\Controller\CompanyController::create',
             description: 'Create a new company.'
         ),
         new Put(
@@ -57,13 +56,13 @@ class Company
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['company:read'])]
+    #[Groups(['company:read', 'user:read'])]
     private int $id;
 
     #[ORM\Column(type: 'string', length: 100, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 5, max: 100)]
-    #[Groups(['company:read', 'company:write'])]
+    #[Groups(['company:read', 'company:write', 'user:read'])]
     private string $name;
 
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'company')]

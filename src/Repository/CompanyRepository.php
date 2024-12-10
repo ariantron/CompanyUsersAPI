@@ -21,17 +21,17 @@ class CompanyRepository extends ServiceEntityRepository
     }
 
     /**
-     * Retrieve all companies with pagination and additional filters.
+     * Retrieve all companies.
      *
-     * @param array $filters Filters to apply, including pageNumber and pageSize.
+     * @param int $page
      * @return Company[] Array of company entities.
      */
-    public function index(array $filters): array
+    public function index(int $page = 1): array
     {
         $queryBuilder = $this->createQueryBuilder('c')
-            ->orderBy('c.id', 'DESC');
+            ->orderBy('c.id', 'ASC');
         $pageSize = 12;
-        $queryBuilder->setFirstResult(($filters['page'] - 1) * $pageSize)
+        $queryBuilder->setFirstResult(($page - 1) * $pageSize)
             ->setMaxResults($pageSize);
         return $queryBuilder->getQuery()->getResult();
     }

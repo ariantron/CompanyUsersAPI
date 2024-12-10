@@ -48,12 +48,12 @@ use App\Enum\UserRoleEnum;
         ),
         new put(
             uriTemplate: '/users/{id}/set-company/{companyId}',
-            controller: 'App\Controller\UserController::assignCompany',
+            controller: 'App\Controller\UserController::setCompany',
             description: 'Set a user to a company.'
         ),
         new put(
             uriTemplate: '/users/{id}/unset-company/{companyId}',
-            controller: 'App\Controller\UserController::unassignCompany',
+            controller: 'App\Controller\UserController::unsetCompany',
             description: 'Unset a user from a company.'
         ),
         new Delete(
@@ -75,7 +75,7 @@ class User
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'company:read'])]
     private int $id;
 
     #[ORM\Column(type: 'string', length: 100)]
@@ -89,7 +89,7 @@ class User
         pattern: '/[A-Z]/',
         message: 'The name must contain at least one uppercase letter.'
     )]
-    #[Groups(['user:read', 'user:write'])]
+    #[Groups(['user:read', 'user:write', 'company:read'])]
     private string $name;
 
     #[ORM\Column(type: 'string', length: 100, enumType: UserRoleEnum::class)]
@@ -169,7 +169,7 @@ class User
 
     public function setPassword(string $password): void
     {
-        $this->password = $password;
+        $this->password = password_hash($password, PASSWORD_DEFAULT);
     }
 
     public function isSuperAdmin(): bool

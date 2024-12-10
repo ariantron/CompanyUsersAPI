@@ -11,6 +11,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class CompanyController extends BaseController
@@ -34,16 +35,8 @@ class CompanyController extends BaseController
     #[Route('/companies', methods: ['GET'])]
     public function index(Request $request): Response
     {
-        $data = json_decode($request->getContent(), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
-        }
-        $filters = [
-            'pageNumber' => $data['page_number'] ?? 1,
-            'pageSize' => $data['page_number'] ?? 12
-        ];
-        $companies = $this->companyRepository->index($filters);
-        return $this->json($companies);
+        $companies = $this->companyRepository->index($request->get('page', 1));
+        return $this->json($companies, context: [AbstractNormalizer::GROUPS => ['company:read']]);
     }
 
     #[Route('/companies/{id}', methods: ['GET'])]
@@ -53,7 +46,7 @@ class CompanyController extends BaseController
         if (!$company) {
             return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
         }
-        return $this->json($company);
+        return $this->json($company, context: [AbstractNormalizer::GROUPS => ['company:read']]);
     }
 
     #[Route('/companies/{id}/users', methods: ['GET'])]
@@ -73,7 +66,7 @@ class CompanyController extends BaseController
             return $this->json(['error' => 'Company not found'], Response::HTTP_NOT_FOUND);
         }
         $users = $this->companyRepository->getUsers($company);
-        return $this->json($users);
+        return $this->json($users, context: [AbstractNormalizer::GROUPS => ['company:read']]);
     }
 
     /**
@@ -96,7 +89,8 @@ class CompanyController extends BaseController
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+                $field = $error->getPropertyPath();
+                $errorMessages[$field] = $error->getMessage();
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
@@ -128,7 +122,8 @@ class CompanyController extends BaseController
         if (count($errors) > 0) {
             $errorMessages = [];
             foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
+                $field = $error->getPropertyPath();
+                $errorMessages[$field] = $error->getMessage();
             }
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }

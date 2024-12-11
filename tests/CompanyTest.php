@@ -30,12 +30,15 @@ class CompanyTest extends WebTestCase
         $this->jwtService = new JwtService($params);
     }
 
-    private function createSuperAdmin(): User
+    /**
+     * Create a test user with specified role and optional company
+     */
+    private function createTestUser(UserRoleEnum $role): User
     {
         $user = new User();
         $user->setUsername('test_' . uniqid());
         $user->setName('Test User');
-        $user->setRole(UserRoleEnum::ROLE_SUPER_ADMIN);
+        $user->setRole($role);
 
         $plaintextPassword = 'testpassword123';
         $hashedPassword = password_hash($plaintextPassword, PASSWORD_DEFAULT);
@@ -45,6 +48,11 @@ class CompanyTest extends WebTestCase
         $this->entityManager->flush();
 
         return $user;
+    }
+
+    private function createSuperAdmin(): User
+    {
+        return $this->createTestUser(UserRoleEnum::ROLE_SUPER_ADMIN);
     }
 
     /**
@@ -192,6 +200,28 @@ class CompanyTest extends WebTestCase
 
         $deletedCompany = $this->companyRepository->findById($companyId);
         $this->assertNull($deletedCompany);
+    }
+
+    /**
+     * Test accessing companies without proper authorization
+     */
+    public function testUnauthorizedAccess(): void
+    {
+        $user = $this->createTestUser(UserRoleEnum::ROLE_USER);
+
+        $token = $this->generateJwtToken($user);
+
+        $companyData = [
+            'name' => 'Unauthorized Company'
+        ];
+
+        $this->client->request('POST', '/companies', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token
+        ], json_encode($companyData));
+
+        $response = $this->client->getResponse();
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
     }
 
     protected function tearDown(): void

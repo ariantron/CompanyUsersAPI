@@ -251,6 +251,31 @@ class UserTest extends WebTestCase
         $this->assertEquals($company->getId(), $user->getCompany()->getId());
     }
 
+    /**
+     * Test accessing companies without proper authorization
+     */
+    public function testUnauthorizedAccess(): void
+    {
+        $user = $this->createTestUser(UserRoleEnum::ROLE_USER);
+
+        $token = $this->generateJwtToken($user);
+
+        $userData = [
+            'name' => 'Unauthorized User',
+            'username' => 'username' . uniqid(),
+            'role' => UserRoleEnum::ROLE_USER->value,
+            'password' => '123456'
+        ];
+
+        $this->client->request('POST', '/users', [], [], [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $token
+        ], json_encode($userData));
+
+        $response = $this->client->getResponse();
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+    }
+
     protected function tearDown(): void
     {
         parent::tearDown();

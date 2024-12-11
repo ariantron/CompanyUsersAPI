@@ -69,9 +69,6 @@ class CompanyController extends BaseController
         return $this->json($users, context: [AbstractNormalizer::GROUPS => ['company:read']]);
     }
 
-    /**
-     * @Route("/company", name="company_create", methods={"POST"})
-     */
     #[Route('/companies', methods: ['POST'])]
     public function create(Request $request, ValidatorInterface $validator): Response
     {
@@ -84,7 +81,9 @@ class CompanyController extends BaseController
             return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
         }
         $company = new Company();
-        $company->setName($data['name']);
+        if (isset($data['name'])) {
+            $company->setName($data['name']);
+        }
         $errors = $validator->validate($company);
         if (count($errors) > 0) {
             $errorMessages = [];

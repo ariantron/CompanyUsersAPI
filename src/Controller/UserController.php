@@ -85,7 +85,7 @@ class UserController extends BaseController
         }
         $user = new User();
         if (isset($data['name'])) {
-            $user->setName($data['name'] ?? null);
+            $user->setName($data['name']);
         }
         if (UserRoleEnum::isValid($data['role'] ?? null)) {
             $user->setRole(UserRoleEnum::from($data['role']));
@@ -116,24 +116,6 @@ class UserController extends BaseController
         return $this->json(['message' => 'User created successfully'], Response::HTTP_CREATED);
     }
 
-    #[Route('/users/{id}/set-company/{companyId}', methods: ['PUT'])]
-    public function setCompany(int $id, int $companyId, Request $request): Response
-    {
-        $requestUser = $this->getUserFromJWT($request);
-        if (!$requestUser->isSuperAdmin()) {
-            return $this->responseForbidden();
-        }
-        $user = $this->userRepository->findById($id);
-        $company = $this->companyRepository->findById($companyId);
-        if (!$user) {
-            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
-        } elseif (!$company) {
-            return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
-        }
-        $this->userRepository->setCompany($user, $company);
-        return $this->json(['message' => 'User was set to company successfully']);
-    }
-
     #[Route('/users', methods: ['PUT'])]
     public function update(int $id, Request $request, ValidatorInterface $validator): Response
     {
@@ -155,7 +137,7 @@ class UserController extends BaseController
             return $this->responseForbidden();
         }
         if (isset($data['name'])) {
-            $user->setName($data['name'] ?? null);
+            $user->setName($data['name']);
         }
         if (UserRoleEnum::isValid($data['role'] ?? null)) {
             $user->setRole(UserRoleEnum::from($data['role']));
@@ -186,7 +168,25 @@ class UserController extends BaseController
         return $this->json(['message' => 'User updated successfully']);
     }
 
-    #[Route('/users/{id}/unset-company/{companyId}', methods: ['PUT'])]
+    #[Route('/users/{id}/set-company/{companyId}', methods: ['PUT'])]
+    public function setCompany(int $id, int $companyId, Request $request): Response
+    {
+        $requestUser = $this->getUserFromJWT($request);
+        if (!$requestUser->isSuperAdmin()) {
+            return $this->responseForbidden();
+        }
+        $user = $this->userRepository->findById($id);
+        $company = $this->companyRepository->findById($companyId);
+        if (!$user) {
+            return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
+        } elseif (!$company) {
+            return $this->json(['message' => 'Company not found'], Response::HTTP_NOT_FOUND);
+        }
+        $this->userRepository->setCompany($user, $company);
+        return $this->json(['message' => 'User was set to company successfully']);
+    }
+
+    #[Route('/users/{id}/unset-company', methods: ['PUT'])]
     public function unsetCompany(int $id, Request $request): Response
     {
         $requestUser = $this->getUserFromJWT($request);

@@ -52,7 +52,7 @@ use App\Enum\UserRoleEnum;
             description: 'Set a user to a company.'
         ),
         new put(
-            uriTemplate: '/users/{id}/unset-company/{companyId}',
+            uriTemplate: '/users/{id}/unset-company',
             controller: 'App\Controller\UserController::unsetCompany',
             description: 'Unset a user from a company.'
         ),

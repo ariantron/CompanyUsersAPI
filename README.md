@@ -168,10 +168,7 @@
    cp .env.test.example .env.test
    ```
 
-4. Configure database connection in `.env`
-   ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/dbname?serverVersion=15&charset=utf8"
-   ```
+4. Configure database connection and another environment in .env files
 
 5. Create database and run migrations
    ```bash

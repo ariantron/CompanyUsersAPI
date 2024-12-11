@@ -26,3 +26,6 @@ phpstan.neon
 ###> idea files ###
 /.idea/
 ###< idea files ###
+###> phpunit cache files ###
+/.phpunit.cache/
+###< phpunit cache files ###

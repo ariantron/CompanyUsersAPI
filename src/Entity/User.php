@@ -10,7 +10,6 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Dto\LoginRequest;
 use App\Dto\LoginResponse;
-use App\Dto\UserFilterInput;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;

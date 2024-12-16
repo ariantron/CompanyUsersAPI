@@ -15,6 +15,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
 use App\Enum\UserRoleEnum;
+use ApiPlatform\Metadata\ApiProperty;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: "users")]
@@ -75,6 +76,14 @@ class User
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     #[Groups(['user:read', 'company:read'])]
+    #[ApiProperty(
+        description: 'Unique identifier for the user.',
+        identifier: true,
+        openapiContext: [
+            'type' => 'integer',
+            'example' => 2
+        ]
+    )]
     private int $id;
 
     #[ORM\Column(type: 'string', length: 100)]
@@ -89,28 +98,63 @@ class User
         message: 'The name must contain at least one uppercase letter.'
     )]
     #[Groups(['user:read', 'user:write', 'company:read'])]
+    #[ApiProperty(
+        description: 'Full name of the user.',
+        openapiContext: [
+            'type' => 'string',
+            'example' => 'John Doe'
+        ]
+    )]
     private string $name;
 
     #[ORM\Column(type: 'string', length: 100, enumType: UserRoleEnum::class)]
     #[Assert\NotBlank]
     #[Groups(['user:read', 'user:write'])]
+    #[ApiProperty(
+        description: 'Role of the user in the system.',
+        openapiContext: [
+            'type' => 'string',
+            'enum' => ['ROLE_SUPER_ADMIN', 'ROLE_COMPANY_ADMIN', 'ROLE_USER']
+        ]
+    )]
     private UserRoleEnum $role;
 
     #[ORM\ManyToOne(targetEntity: Company::class, inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: true)]
     #[Groups(['user:read', 'user:write'])]
+    #[ApiProperty(
+        description: 'Company associated with the user.',
+        openapiContext: [
+            'type' => 'object',
+            'example' => ['id' => 1, 'name' => 'Acme Corporation']
+        ]
+    )]
     private ?Company $company = null;
 
     #[ORM\Column(type: 'string', length: 100, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 100)]
     #[Groups(['user:read', 'user:write'])]
+    #[ApiProperty(
+        description: 'Unique username for user authentication.',
+        openapiContext: [
+            'type' => 'string',
+            'example' => 'johndoe'
+        ]
+    )]
     private string $username;
 
     #[ORM\Column(type: 'string')]
     #[Assert\NotBlank]
     #[Assert\Length(min: 6, max: 255)]
     #[Groups(['user:write'])]
+    #[ApiProperty(
+        description: 'Hashed password for user authentication.',
+        openapiContext: [
+            'type' => 'string',
+            'writeOnly' => true
+        ]
+    )]
     private string $password;
 
     public function getId(): int

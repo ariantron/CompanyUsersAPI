@@ -14,6 +14,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Annotation\Groups;
+use ApiPlatform\Metadata\ApiProperty;
 
 #[ORM\Entity(repositoryClass: CompanyRepository::class)]
 #[ORM\Table(name: "companies")]
@@ -57,15 +58,40 @@ class Company
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
     #[Groups(['company:read', 'user:read'])]
+    #[ApiProperty(
+        description: 'Unique identifier for the company.',
+        identifier: true,
+        openapiContext: [
+            'type' => 'integer',
+            'example' => 1
+        ]
+    )]
     private int $id;
 
     #[ORM\Column(type: 'string', length: 100, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(min: 5, max: 100)]
     #[Groups(['company:read', 'company:write', 'user:read'])]
+    #[ApiProperty(
+        description: 'Name of the company, must be unique.',
+        openapiContext: [
+            'type' => 'string',
+            'example' => 'Acme Corporation'
+        ]
+    )]
     private string $name;
 
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'company')]
+    #[ApiProperty(
+        description: 'Collection of users associated with this company.',
+        openapiContext: [
+            'type' => 'array',
+            'items' => [
+                'type' => 'object',
+                'example' => ['id' => 1, 'name' => 'John Doe']
+            ]
+        ]
+    )]
     private $users;
 
     public function __construct()

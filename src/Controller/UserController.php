@@ -40,7 +40,7 @@ class UserController extends BaseController
             return $this->responseForbidden();
         }
         $users = $this->userRepository->index($request->get('page', 1));
-        return $this->json($users, context: [AbstractNormalizer::GROUPS => ['user:read']]);
+        return $this->json($users, context: [AbstractNormalizer::GROUPS => ['user:read', 'company:read']]);
     }
 
     #[Route('/users/{id}', methods: ['GET'])]
@@ -57,7 +57,7 @@ class UserController extends BaseController
         if (!$user) {
             return $this->json(['message' => 'User not found'], Response::HTTP_NOT_FOUND);
         }
-        return $this->json($user);
+        return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read', 'company:read']]);
     }
 
     #[Route('/user', methods: ['GET'])]
@@ -68,7 +68,7 @@ class UserController extends BaseController
             return $this->json(['error' => $response['message']], $response['status']);
         }
         $user = $response;
-        return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read']]);
+        return $this->json($user, context: [AbstractNormalizer::GROUPS => ['user:read', 'company:read']]);
     }
 
     #[Route('/users', methods: ['POST'])]

@@ -226,13 +226,7 @@ This project has been deployed to the domain [sapi.mtrade.ir](https://sapi.mtrad
 
 ### CI/CD with GitHub Actions
 
-The deployment process is automated using GitHub Actions. A custom GitHub Actions workflow ensures seamless integration and delivery by performing the following steps:
-
-1. Building the application.
-2. Running tests to ensure code quality.
-3. Deploying the latest code to the production environment on [sapi.mtrade.ir](https://sapi.mtrade.ir).
-
-You can view the GitHub Actions workflow configuration in the `.github/workflows` directory of the repository.
+The deployment process is automated using GitHub Actions. You can view the GitHub Actions workflow configuration in the `.github/workflows` directory of the repository.
 
 ## Impersonation
 

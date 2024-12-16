@@ -6,42 +6,32 @@ use App\Entity\Company;
 use App\Entity\User;
 use App\Enum\UserRoleEnum;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Faker\Factory;
 use Faker\Generator;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Output\ConsoleOutput;
 
-class GenerateFakeDataFixtures extends Fixture
+class UserDataFixture extends Fixture implements DependentFixtureInterface
 {
     public function load(ObjectManager $manager): void
     {
         $faker = Factory::create();
         $output = new ConsoleOutput();
 
+        // Create Super Admin first, without any company association
         $this->createSuperAdmin($manager);
         $output->writeln("\nSuper Admin User was successfully created! (Password: 123456)\n");
 
-        $companyProgressBar = new ProgressBar($output, 10);
-        $companyProgressBar->start();
-
-        $companies = [];
-        for ($i = 0; $i < 10; $i++) {
-            $company = $this->createFakeCompany($faker, $manager);
-            $companies[] = $company;
-            $companyProgressBar->advance();
-        }
-
-        $companyProgressBar->finish();
-        $output->writeln("\nCompanies created successfully!\n");
+        // Get all companies to assign users to
+        $companies = $manager->getRepository(Company::class)->findAll();
 
         $userProgressBar = new ProgressBar($output, 100);
         $userProgressBar->start();
 
         for ($i = 0; $i < 100; $i++) {
-            $user = $this->createFakeUser($faker, $manager);
-            $user->setCompany($companies[array_rand($companies)]);
-            $manager->persist($user);
+            $this->createFakeUser($faker, $manager, $companies);
             $userProgressBar->advance();
         }
 
@@ -49,8 +39,6 @@ class GenerateFakeDataFixtures extends Fixture
         $output->writeln("\nUsers created successfully!\n");
 
         $manager->flush();
-
-        $output->writeln("Fake Data was successfully generated!");
     }
 
     private function createSuperAdmin(ObjectManager $manager): void
@@ -64,33 +52,27 @@ class GenerateFakeDataFixtures extends Fixture
         $manager->persist($user);
     }
 
-    private function createFakeCompany(Generator $faker, ObjectManager $manager): Company
-    {
-        $company = new Company();
-        $company->setName($faker->company);
-        $manager->persist($company);
-
-        $this->createFakeUser($faker, $manager, $company);
-
-        return $company;
-    }
-
-    private function createFakeUser(Generator $faker, ObjectManager $manager, ?Company $company = null): User
+    private function createFakeUser(Generator $faker, ObjectManager $manager, array $companies): void
     {
         $user = new User();
         $user->setName($faker->name);
         $user->setUsername($faker->userName);
         $user->setPassword(password_hash((string)rand(100000, 999999), PASSWORD_DEFAULT));
 
-        if ($company) {
-            $user->setCompany($company);
-            $user->setRole(UserRoleEnum::ROLE_COMPANY_ADMIN);
-        } else {
-            $user->setRole(UserRoleEnum::ROLE_USER);
+        // Randomly assign a company
+        if (!empty($companies)) {
+            $user->setCompany($companies[array_rand($companies)]);
         }
 
-        $manager->persist($user);
+        $user->setRole(UserRoleEnum::ROLE_USER);
 
-        return $user;
+        $manager->persist($user);
+    }
+
+    public function getDependencies(): array
+    {
+        return [
+            CompanyDataFixture::class
+        ];
     }
 }
